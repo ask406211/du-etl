@@ -5,6 +5,11 @@ resource "google_cloud_run_v2_job" "etl" {
   name     = "du-etl"
   location = var.region
 
+  # The provider defaults this to true as a guard for production services.
+  # This job holds no state and is rebuilt from source on every deploy, so
+  # blocking replacement would only get in the way of `terraform destroy`.
+  deletion_protection = false
+
   template {
     # Do not retry the whole task: the run is idempotent, but a genuine
     # failure should surface rather than be masked by a retry.
@@ -75,5 +80,10 @@ resource "google_cloud_run_v2_job" "etl" {
   depends_on = [
     google_project_service.required,
     google_secret_manager_secret_iam_member.job_reads_db_url,
+    # The container references version "latest", which does not resolve
+    # until a version exists. Terraform cannot infer this from the
+    # secret_id reference alone, so without this the job and the secret
+    # version are created in parallel and the job fails on a fresh deploy.
+    google_secret_manager_secret_version.database_url,
   ]
 }
