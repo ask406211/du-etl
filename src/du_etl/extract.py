@@ -56,11 +56,11 @@ def build_state_filter(states: list[str]) -> str:
     return f"State IN ({states_for_query})"
 
 
-def fetch_chapters(states: list[str]) -> list[dict]:
+def fetch_chapters(states: list[str]) -> list[dict[str, Any]]:
     """Fetch chapter records from the Ducks Unlimited API."""
     state_filter = build_state_filter(states)
 
-    chapters: list[dict] = []
+    chapters: list[dict[str, Any]] = []
     result_offset = 0
 
     while True:

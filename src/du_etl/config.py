@@ -29,4 +29,6 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     """Load settings once, on first use rather than at import."""
-    return Settings()
+    # mypy cannot see that pydantic-settings fills these from the
+    # environment, so it reports the fields as missing arguments.
+    return Settings()  # type: ignore[call-arg]

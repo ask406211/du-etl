@@ -5,6 +5,7 @@ against a saved API response in milliseconds.
 """
 
 import logging
+from typing import Any
 
 from pydantic import ValidationError
 
@@ -13,7 +14,7 @@ from .models import Chapter
 logger = logging.getLogger(__name__)
 
 
-def to_chapter(feature: dict) -> Chapter:
+def to_chapter(feature: dict[str, Any]) -> Chapter:
     """Convert one ArcGIS feature into a Chapter.
 
     Raises KeyError or ValidationError if the feature does not match the
@@ -32,7 +33,7 @@ def to_chapter(feature: dict) -> Chapter:
     )
 
 
-def transform(features: list[dict], states: list[str]) -> list[Chapter]:
+def transform(features: list[dict[str, Any]], states: list[str]) -> list[Chapter]:
     """Convert and filter raw features, skipping any record that is malformed.
 
     A single bad record must not sink the daily run, but it must be visible

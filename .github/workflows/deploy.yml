@@ -1,0 +1,66 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# id-token is what lets the workflow request an OIDC token from GitHub and
+# exchange it for a Google credential. No service account key is stored.
+permissions:
+  contents: read
+  id-token: write
+
+# Never let two deploys race each other onto the same infrastructure.
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  REGION: ${{ vars.GCP_REGION }}
+  PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_CICD_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Authenticate Docker to Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Build and push
+        id: build
+        run: |
+          set -euo pipefail
+          REPO="${REGION}-docker.pkg.dev/${PROJECT_ID}/du-etl/du-etl"
+          # Tag with the commit SHA as well as latest: deployments reference
+          # the immutable SHA, so it is always clear what is running and a
+          # rollback is just a previous tag.
+          docker build -t "${REPO}:${GITHUB_SHA}" -t "${REPO}:latest" .
+          docker push "${REPO}:${GITHUB_SHA}"
+          docker push "${REPO}:latest"
+          echo "image=${REPO}:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.8"
+
+      - name: Terraform apply
+        working-directory: infra
+        run: |
+          set -euo pipefail
+          terraform init -input=false
+          terraform apply -input=false -auto-approve \
+            -var="project_id=${PROJECT_ID}" \
+            -var="region=${REGION}" \
+            -var="image=${{ steps.build.outputs.image }}" \
+            -var="github_repository=${GITHUB_REPOSITORY}"

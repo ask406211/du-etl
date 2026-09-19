@@ -1,0 +1,13 @@
+# Copy to terraform.tfvars and fill in. terraform.tfvars is gitignored.
+project_id        = "your-project-id"
+region            = "us-central1"
+github_repository = "your-github-user/du-chapters-etl"
+
+# Push the image before the first apply; Cloud Run validates it exists.
+image = "us-central1-docker.pkg.dev/your-project-id/du-etl/du-etl:latest"
+
+target_states = "CA"
+schedule      = "0 6 * * *"
+
+# Set false to skip Cloud SQL and point at an existing database instead.
+create_database = true
