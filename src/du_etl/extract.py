@@ -2,35 +2,32 @@
 from typing import Any
 
 import httpx
-from tenacity import retry, retry_if_exception_type, retry_if_result
-from tenacity import stop_after_attempt, wait_exponential
+from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
-from .config import settings
+from .config import get_settings
 
 
-def is_server_error(response: httpx.Response) -> bool:
-    """Return True when the server returned a 5xx error."""
-    return response.status_code >= 500
+def is_retryable(exception: BaseException) -> bool:
+    """Retry transient failures only: timeouts, connection errors, 5xx."""
+    if isinstance(exception, httpx.TransportError):  # timeouts + connect errors
+        return True
+    if isinstance(exception, httpx.HTTPStatusError):
+        return exception.response.status_code >= 500
+    return False
 
 
 @retry(
-    retry=(
-        retry_if_exception_type(httpx.TimeoutException)
-        | retry_if_result(is_server_error)
-    ),
+    retry=retry_if_exception(is_retryable),
     wait=wait_exponential(min=1, max=10),
     stop=stop_after_attempt(4),
     reraise=True,
 )
-def get_from_api(
-    url: str,
-    parameters: dict[str, Any],
-) -> httpx.Response:
+def get_from_api(url: str, parameters: dict[str, Any]) -> httpx.Response:
     """Make an API request, retrying temporary failures."""
     response = httpx.get(
         url,
         params=parameters,
-        timeout=settings.http_timeout,
+        timeout=get_settings().http_timeout,
     )
 
     response.raise_for_status()
@@ -77,7 +74,7 @@ def fetch_chapters(states: list[str]) -> list[dict]:
         }
 
         response = get_from_api(
-            settings.du_feature_service_url,
+            get_settings().du_feature_service_url,
             parameters,
         )
 
