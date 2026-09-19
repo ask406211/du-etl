@@ -1,0 +1,32 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: du
+      POSTGRES_PASSWORD: du_local_only
+      POSTGRES_DB: du
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      # Without this the ETL starts before Postgres accepts connections
+      # and fails on the very first run.
+      test: ["CMD-SHELL", "pg_isready -U du -d du"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  etl:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DU_FEATURE_SERVICE_URL: https://services2.arcgis.com/5I7u4SJE1vUr79JC/arcgis/rest/services/UniversityChapters_Public/FeatureServer/0/query
+      TARGET_STATES: ${TARGET_STATES:-CA}
+      DATABASE_URL: postgresql://du:du_local_only@postgres:5432/du
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+
+volumes:
+  pgdata:

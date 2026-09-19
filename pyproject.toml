@@ -38,3 +38,6 @@ addopts = "-m 'not integration'"
 [tool.mypy]
 python_version = "3.11"
 strict = true
+
+[tool.setuptools.package-data]
+du_etl = ["sql/*.sql"]
