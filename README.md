@@ -203,8 +203,13 @@ data only ever read back as a pair.
 the same code path serves local TCP and the Cloud SQL unix socket
 (`?host=/cloudsql/...`), so no environment branching in application code.
 
-**No public IP on Cloud SQL.** Cloud Run's built-in connector mounts a unix
-socket, so nothing is internet-facing and no paid VPC connector is required.
+**Cloud SQL with an empty allow-list.** The instance has a public endpoint
+because the Cloud SQL Auth Proxy requires one, but `authorized_networks` is
+empty and `ssl_mode` is `ENCRYPTED_ONLY`, so every connection must be
+IAM-authenticated through the proxy — a password alone reaches nothing.
+Cloud Run mounts it as a unix socket, which avoids a paid VPC connector.
+Private IP would remove the public endpoint altogether, at the cost of a VPC
+and service-networking peering.
 
 **Workload Identity Federation over a service account key.** A JSON key is a
 long-lived credential sitting in a GitHub secret. WIF issues a short-lived

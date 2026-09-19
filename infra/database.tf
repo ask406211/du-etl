@@ -26,11 +26,17 @@ resource "google_sql_database_instance" "main" {
     }
 
     ip_configuration {
-      # No public IP. The Cloud Run job reaches the instance over a unix
-      # socket provided by the built-in Cloud SQL connector, so there is
-      # nothing exposed to the internet and no VPC connector to pay for.
-      ipv4_enabled    = false
-      private_network = null
+      # Cloud SQL requires at least one connectivity mode, and the Cloud SQL
+      # Auth Proxy (which Cloud Run's built-in connector uses) dials the
+      # public endpoint. Security comes from authorized_networks being empty:
+      # every connection must be IAM-authenticated through the proxy, so a
+      # password alone reaches nothing.
+      #
+      # Private IP would remove the public endpoint entirely, but requires a
+      # VPC plus service-networking peering. Noted in the README as
+      # follow-up work.
+      ipv4_enabled = true
+      ssl_mode     = "ENCRYPTED_ONLY"
     }
   }
 
