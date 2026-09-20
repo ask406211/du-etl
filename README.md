@@ -240,18 +240,40 @@ terraform destroy   # removes everything, including the database
 
 ---
 
+## Known limitations
+
+**Terraform state is local, so the `deploy` workflow cannot apply
+infrastructure yet.** State lives in `infra/terraform.tfstate`, which is
+gitignored because it stores the generated database password in plaintext.
+GitHub Actions therefore starts with empty state, concludes that nothing
+exists, and fails trying to recreate resources that are already deployed.
+
+The `ci` workflow (lint, types, unit and integration tests, `terraform
+validate`) is unaffected and passes.
+
+Everything in this repository *was* deployed and verified — the
+infrastructure was applied from a workstation, the Cloud Run Job executed
+successfully against Cloud SQL, and the daily schedule is live. Only the
+automated path for infrastructure changes is incomplete.
+
+The fix is item 1 below and takes roughly ten minutes. It was left out
+deliberately as a time trade-off rather than overlooked.
+
+---
+
 ## What I would do next
 
 Ordered by what I would pick up first.
 
-1. **Alembic migrations.** The schema is applied with
+1. **Remote Terraform state.** A versioned GCS bucket with object
+   versioning and restricted IAM; the backend block is present and
+   commented in `versions.tf`. This closes the limitation above and is a
+   prerequisite for more than one person touching the infrastructure.
+2. **Alembic migrations.** The schema is applied with
    `CREATE TABLE IF NOT EXISTS` on each run, which handles creation but not
    evolution. Alembic gives versioned, reversible changes.
-2. **Alerting.** A log-based metric on non-zero job exits wired to a
+3. **Alerting.** A log-based metric on non-zero job exits wired to a
    notification channel. Today a failure is visible only in Cloud Logging.
-3. **Remote Terraform state.** A versioned GCS bucket; the backend block is
-   present and commented in `versions.tf`. Local state does not work for a
-   team.
 4. **`terraform plan` on pull requests**, posted as a PR comment, so
    infrastructure changes are reviewed before merge.
 5. **Historical tracking.** The table holds current state only. A
