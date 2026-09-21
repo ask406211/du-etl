@@ -29,11 +29,11 @@ Cloud Scheduler --- daily 06:00 UTC, OAuth ---> Cloud Run Job
 
 | Layer | Module | Responsibility |
 |---|---|---|
-| Extract | `src/du_etl/extract.py` | ArcGIS query, retries, pagination |
-| Transform | `src/du_etl/transform.py` | Validate, map fields, filter by state |
-| Load | `src/du_etl/load.py` | Idempotent upsert |
-| Config | `src/du_etl/config.py` | All environment access, in one place |
-| Orchestration | `src/du_etl/main.py` | Wire the three together, set exit code |
+| Extract | `src/ducks_unlimited/extract.py` | ArcGIS query, retries, pagination |
+| Transform | `src/ducks_unlimited/transform.py` | Validate, map fields, filter by state |
+| Load | `src/ducks_unlimited/load.py` | Idempotent upsert |
+| Config | `src/ducks_unlimited/config.py` | All environment access, in one place |
+| Orchestration | `src/ducks_unlimited/main.py` | Wire the three together, set exit code |
 
 `transform.py` imports neither `httpx` nor `psycopg`. The logic with the
 interesting edge cases in it is testable without a network or a database.
@@ -45,17 +45,17 @@ interesting edge cases in it is testable without a network or a database.
 Requires Docker only.
 
 ```bash
-git clone <this repo> && cd du-chapters-etl
+git clone <this repo> && cd ducks-unlimited
 docker compose run --rm --build etl
 ```
 
 Expected output:
 
 ```json
-{"severity": "INFO", "message": "pipeline starting for states=['CA']", "logger": "du_etl"}
-{"severity": "INFO", "message": "transform complete: received=3 kept=3 skipped=0 states=['CA']", "logger": "du_etl.transform"}
-{"severity": "INFO", "message": "upserted 3 chapters", "logger": "du_etl.load"}
-{"severity": "INFO", "message": "pipeline succeeded fetched=3 loaded=3 duration_s=0.85", "logger": "du_etl"}
+{"severity": "INFO", "message": "pipeline starting for states=['CA']", "logger": "ducks_unlimited"}
+{"severity": "INFO", "message": "transform complete: received=3 kept=3 skipped=0 states=['CA']", "logger": "ducks_unlimited.transform"}
+{"severity": "INFO", "message": "upserted 3 chapters", "logger": "ducks_unlimited.load"}
+{"severity": "INFO", "message": "pipeline succeeded fetched=3 loaded=3 duration_s=0.85", "logger": "ducks_unlimited"}
 ```
 
 Inspect the result:
@@ -89,7 +89,7 @@ source .venv/bin/activate          # Windows: .venv\Scripts\Activate.ps1
 pip install -e ".[dev]"
 cp .env.example .env
 docker compose up -d postgres
-python -m du_etl.main
+python -m ducks_unlimited.main
 ```
 
 ---

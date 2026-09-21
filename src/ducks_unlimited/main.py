@@ -9,7 +9,7 @@ from .extract import fetch_chapters
 from .load import upsert_chapters
 from .transform import transform
 
-logger = logging.getLogger("du_etl")
+logger = logging.getLogger("ducks_unlimited")
 
 
 class JsonFormatter(logging.Formatter):

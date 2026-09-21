@@ -9,9 +9,9 @@ Excluded from the default run (see addopts in pyproject.toml). Enable with:
 
 import pytest
 
-from du_etl.db import connection, init_schema
-from du_etl.load import upsert_chapters
-from du_etl.models import Chapter
+from ducks_unlimited.db import connection, init_schema
+from ducks_unlimited.load import upsert_chapters
+from ducks_unlimited.models import Chapter
 
 pytestmark = pytest.mark.integration
 

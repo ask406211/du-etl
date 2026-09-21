@@ -8,7 +8,7 @@ import os
 
 import pytest
 
-from du_etl.config import get_settings
+from ducks_unlimited.config import get_settings
 
 API_URL = "https://example.test/query"
 

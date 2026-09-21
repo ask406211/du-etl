@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from du_etl.transform import to_chapter, transform
+from ducks_unlimited.transform import to_chapter, transform
 
 FIXTURE = Path(__file__).parent / "fixtures" / "du_ca_response.json"
 CA = ["CA"]

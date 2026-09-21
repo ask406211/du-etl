@@ -6,7 +6,7 @@ import respx
 from tenacity import wait_none
 
 from conftest import API_URL
-from du_etl.extract import build_state_filter, fetch_chapters, get_from_api
+from ducks_unlimited.extract import build_state_filter, fetch_chapters, get_from_api
 
 
 @pytest.fixture

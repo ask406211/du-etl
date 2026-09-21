@@ -25,4 +25,4 @@ USER appuser
 WORKDIR /home/appuser
 
 # A batch job, not a server: it runs to completion and exits.
-ENTRYPOINT ["du-etl"]
+ENTRYPOINT ["ducks-unlimited"]

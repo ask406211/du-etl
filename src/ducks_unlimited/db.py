@@ -22,7 +22,7 @@ from .config import get_settings
 logger = logging.getLogger(__name__)
 
 # Shipped as package data so it resolves the same way in an installed image.
-SCHEMA_FILE = files("du_etl") / "sql" / "001_schema.sql"
+SCHEMA_FILE = files("ducks_unlimited") / "sql" / "001_schema.sql"
 
 
 @contextmanager
