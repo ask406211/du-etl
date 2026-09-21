@@ -1,4 +1,3 @@
-
 from typing import Any
 
 import httpx
@@ -8,11 +7,15 @@ from .config import get_settings
 
 
 def is_retryable(exception: BaseException) -> bool:
-    """Retry transient failures only: timeouts, connection errors, 5xx."""
-    if isinstance(exception, httpx.TransportError):  # timeouts + connect errors
+
+    # Retry network-related errors such as timeouts and connection failures.
+    if isinstance(exception, httpx.TransportError):
         return True
+
+    # Retry server errors (HTTP 500–599).
     if isinstance(exception, httpx.HTTPStatusError):
         return exception.response.status_code >= 500
+
     return False
 
 
@@ -22,8 +25,11 @@ def is_retryable(exception: BaseException) -> bool:
     stop=stop_after_attempt(4),
     reraise=True,
 )
-def get_from_api(url: str, parameters: dict[str, Any]) -> httpx.Response:
-    """Make an API request, retrying temporary failures."""
+def get_from_api(
+    url: str,
+    parameters: dict[str, Any],
+) -> httpx.Response:
+
     response = httpx.get(
         url,
         params=parameters,
@@ -36,31 +42,36 @@ def get_from_api(url: str, parameters: dict[str, Any]) -> httpx.Response:
 
 
 def build_state_filter(states: list[str]) -> str:
-    """Create the ArcGIS filter for the requested states."""
+
     if not states:
         raise ValueError("At least one state must be provided")
 
-    state_values = [
-        state.strip().replace("'", "''")
-        for state in states
-        if state.strip()
-    ]
+    valid_states = []
 
-    if not state_values:
+    for state in states:
+        state = state.strip()
+
+        if state:
+            # Escape single quotes for the ArcGIS query.
+            state = state.replace("'", "''")
+            valid_states.append(state)
+
+    if not valid_states:
         raise ValueError("At least one valid state must be provided")
 
-    states_for_query = ", ".join(
-        f"'{state}'" for state in state_values
+    state_list = ", ".join(
+        f"'{state}'" for state in valid_states
     )
 
-    return f"State IN ({states_for_query})"
+    return f"State IN ({state_list})"
 
 
 def fetch_chapters(states: list[str]) -> list[dict[str, Any]]:
-    """Fetch chapter records from the Ducks Unlimited API."""
+
+    settings = get_settings()
     state_filter = build_state_filter(states)
 
-    chapters: list[dict[str, Any]] = []
+    chapters = []
     result_offset = 0
 
     while True:
@@ -74,13 +85,13 @@ def fetch_chapters(states: list[str]) -> list[dict[str, Any]]:
         }
 
         response = get_from_api(
-            get_settings().du_feature_service_url,
+            settings.du_feature_service_url,
             parameters,
         )
 
         data = response.json()
 
-        # ArcGIS can return HTTP 200 even when the request failed.
+        # ArcGIS may return HTTP 200 even when the request itself failed.
         if "error" in data:
             raise RuntimeError(
                 f"ArcGIS API returned an error: {data['error']}"
@@ -95,12 +106,10 @@ def fetch_chapters(states: list[str]) -> list[dict[str, Any]]:
 
         chapters.extend(page)
 
-        # Stop when ArcGIS tells us there are no more records.
+        # Stop when there are no more pages.
         if not data.get("exceededTransferLimit", False):
             break
 
-        # Avoid getting stuck if the API says there are more records
-        # but doesn't actually return any.
         if not page:
             break
 
