@@ -1,8 +1,10 @@
 name: Deploy
 
 on:
-  push:
-    branches: [main]
+  # Manual only: the GCP_* repository variables this workflow needs are not
+  # configured, and Terraform state is local (see docs/overview.pdf), so a
+  # push-triggered run fails every time. Deploys are applied manually from
+  # a workstation until the remote-state work is done.
   workflow_dispatch:
 
 # id-token is what lets the workflow request an OIDC token from GitHub and
